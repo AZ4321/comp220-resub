@@ -111,58 +111,12 @@ int main(int argc, char ** argsv)
 	//Last mouse co-ords
 	float lastX = 400, lastY = 320;
 
+	//Mouse yaw/pitch
 	float yaw = 0;
 	float pitch = 0;
 
-	//Directions
-
-
-	//Mouse camera stuff
-	/*void mouse_callback(SDL_Window* window, double xpos, double ypos)
-	{
-		if (firstMouse)
-		{
-			lastX = xpos;
-			lastY = ypos;
-			firstMouse = false;
-		}
-
-		float xoffset = xpos - lastX;
-		float yoffset = lastY - ypos;
-		lastX = xpos;
-		lastY = ypos;
-
-		float sensitivity = 0.05;
-		xoffset *= sensitivity;
-		yoffset *= sensitivity;
-
-		yaw += xoffset;
-		pitch += yoffset;
-
-
-		if (pitch < -89.0f)
-		{
-			pitch = -89.0f;
-		}
-
-		if (pitch > 89.0f)
-		{
-			pitch = 89.0f;
-		}
-
-		glm::vec3 front;
-		front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-		front.y = sin(glm::radians(pitch));
-		front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-		cameraFront = glm::normalize(front);
-
-
-	}*/
-
-
+	//Radius
 	float radius = 10.0f;
-	//float camX = sin(glfwGetTime()) * radius;
-	//float camZ = cos(glfwGetTime()) * radius; replace with SDL_GetTick
 
 	glm::mat4 view;
 
@@ -172,6 +126,7 @@ int main(int argc, char ** argsv)
 	//Light Colour
 	glm::vec4 ambientLightColour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	glm::vec4 diffuseLightColour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	glm::vec4 specularLightColour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
 
 	//Light Direction
@@ -180,7 +135,8 @@ int main(int argc, char ** argsv)
 	//Light Material Properties
 	glm::vec4 ambientMaterialColour = glm::vec4(0.5f, 0.0f, 0.0f, 1.0f);
 	glm::vec4 diffuseMaterialColour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-
+	glm::vec4 specularMaterialColour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	float specularMaterialPower = 25.0f;
 
 
 	GLint simpleProgramID = LoadShaders("blinnPhongVert.glsl", "blinnPhongFrag.glsl");
@@ -197,9 +153,15 @@ int main(int argc, char ** argsv)
 	//Light Uniform Location
 	GLint ambientLightColourLocation = glGetUniformLocation(simpleProgramID, "ambientLightColour");
 	GLint diffuseLightColourLocation = glGetUniformLocation(simpleProgramID, "diffuseLightColour");
+	GLint specularLightColourLocation = glGetUniformLocation(simpleProgramID, "specularLightColour");
+
+
 	GLint lightDirectionLocation = glGetUniformLocation(simpleProgramID, "lightDirection");
 	GLint ambientMaterialColourLocation = glGetUniformLocation(simpleProgramID, "ambientMaterialColour");
 	GLint diffuseMaterialColourLocation = glGetUniformLocation(simpleProgramID, "diffuseMaterialColour");
+
+	GLint specularMaterialColourLocation = glGetUniformLocation(simpleProgramID, "specularMaterialColour");
+	GLint specularMaterialPowerLocation = glGetUniformLocation(simpleProgramID, "specularMaterialPower");
 
 
 	//Running is always true as long as Escape is not pressed 
@@ -308,9 +270,14 @@ int main(int argc, char ** argsv)
 		//Sending light uniforms across
 		glUniform4fv(ambientMaterialColourLocation, 1, glm::value_ptr(ambientMaterialColour));
 		glUniform4fv(diffuseMaterialColourLocation, 1, glm::value_ptr(diffuseMaterialColour));
+		glUniform4fv(specularMaterialColourLocation, 1, glm::value_ptr(specularMaterialColour));
+
 
 		glUniform4fv(ambientLightColourLocation, 1, glm::value_ptr(ambientLightColour));
 		glUniform4fv(diffuseLightColourLocation, 1, glm::value_ptr(diffuseLightColour));
+
+		glUniform4fv(specularLightColourLocation, 1, glm::value_ptr(specularLightColour));
+		glUniform1f(specularMaterialPowerLocation, specularMaterialPower);
 
 		glUniform3fv(lightDirectionLocation, 1, glm::value_ptr(lightDirection));
 
