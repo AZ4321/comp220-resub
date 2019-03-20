@@ -50,6 +50,7 @@ int main(int argc, char ** argsv)
 		return 1;
 	}
 
+	//Capture mouse using SDL to make sure it stays on the screen
 	SDL_CaptureMouse(SDL_TRUE);
 
 	//Requesting 3.3 Core OpenGL version
@@ -83,7 +84,7 @@ int main(int argc, char ** argsv)
 	MeshCollection * tankMesh = new MeshCollection();
 	loadMeshFromFile("Tank1.fbx", tankMesh);
 
-	//Loading the image
+	//Loading the texture
 	GLuint textureID = loadTextureFromFile("Tank1DF.png");
 
 	//Triangle scale/position
@@ -99,12 +100,8 @@ int main(int argc, char ** argsv)
 	//Cumulating the above transformations into one 
 	mat4 modelMatrix = translationMatrix * rotationMatrix*scaleMatrix;
 
-	glm::mat4 matRoll = glm::mat4(1.0f);//identity matrix; 
-	glm::mat4 matPitch = glm::mat4(1.0f);//identity matrix
-	glm::mat4 matYaw = glm::mat4(1.0f);//identity matrix
-
+	//Defining cameraPos, cameraFront, CameraUp to use for key controls/mouse movement
 	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-
 	glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -118,16 +115,16 @@ int main(int argc, char ** argsv)
 	//Radius
 	float radius = 10.0f;
 
+	//Declaring view as a mat4
 	glm::mat4 view;
 
 	//Projection matrix
 	mat4 projectionMatrix = perspective(radians(90.0f), float(800 / 600), 0.1f, 100.0f);
 
-	//Light Colour
+	//Light Colour Properties
 	glm::vec4 ambientLightColour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	glm::vec4 diffuseLightColour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	glm::vec4 specularLightColour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-
 
 	//Light Direction
 	glm::vec3 lightDirection = glm::vec3(0.0f, 0.0f, 1.0f);
@@ -138,36 +135,34 @@ int main(int argc, char ** argsv)
 	glm::vec4 specularMaterialColour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	float specularMaterialPower = 25.0f;
 
-
+	//Loading shaders, if not print error
 	GLint simpleProgramID = LoadShaders("blinnPhongVert.glsl", "blinnPhongFrag.glsl");
 	if (simpleProgramID < 0)
 	{
-		printf("Textures have not loaded");
+		printf("Shaders have not loaded");
 	}
 
+	//Uniform Locations for the model, view and projection matrixes as well as the location for the texture
 	GLint modelMatrixLocation=glGetUniformLocation(simpleProgramID, "modelMatrix");
 	GLint viewMatrixLocation = glGetUniformLocation(simpleProgramID, "viewMatrix");
 	GLint projectionMatrixLocation = glGetUniformLocation(simpleProgramID, "projectionMatrix");
 	GLint textureLocation = glGetUniformLocation(simpleProgramID, "baseTexture");
 
-	//Light Uniform Location
+	//Getting the Light Colour location uniforms as well as the Light Direction
 	GLint ambientLightColourLocation = glGetUniformLocation(simpleProgramID, "ambientLightColour");
 	GLint diffuseLightColourLocation = glGetUniformLocation(simpleProgramID, "diffuseLightColour");
 	GLint specularLightColourLocation = glGetUniformLocation(simpleProgramID, "specularLightColour");
-
-
 	GLint lightDirectionLocation = glGetUniformLocation(simpleProgramID, "lightDirection");
+
+	//Uniform for the light material colour locations to pass in later
 	GLint ambientMaterialColourLocation = glGetUniformLocation(simpleProgramID, "ambientMaterialColour");
 	GLint diffuseMaterialColourLocation = glGetUniformLocation(simpleProgramID, "diffuseMaterialColour");
-
 	GLint specularMaterialColourLocation = glGetUniformLocation(simpleProgramID, "specularMaterialColour");
 	GLint specularMaterialPowerLocation = glGetUniformLocation(simpleProgramID, "specularMaterialPower");
-
 
 	//Running is always true as long as Escape is not pressed 
 	bool running = true;
 	float cameraSpeed = 0.05f;
-
 
 	//SDL Event structure initiation
 	SDL_Event ev;
@@ -190,6 +185,7 @@ int main(int argc, char ** argsv)
 				float y = ev.motion.y;
 				float xoffset = x - lastX;
 				float yoffset = lastY - y; // reversed since y-coordinates range from bottom to top
+				//stating the last x/y mouse co-ords to be the present ones
 				lastX = x;
 				lastY = y;
 				//Sensitivity
@@ -200,7 +196,7 @@ int main(int argc, char ** argsv)
 				//yaw/pitch offsets
 				yaw += xoffset;
 				pitch += yoffset;
-
+				 
 				//Clamps pitch
 				if (pitch > 89.0f)
 					pitch = 89.0f;
@@ -229,12 +225,12 @@ int main(int argc, char ** argsv)
 					running = false;
 					break;
 				case SDLK_f:
-					SDL_SetWindowFullscreen(window,1);
+					SDL_SetWindowFullscreen(window,1); //setting window to fullscreen on F key press
 				case SDLK_w:
-					cameraPos += cameraSpeed * cameraFront;
+					cameraPos += cameraSpeed * cameraFront; //If W key is pressed, the camera pos is more than or equal to the speed * front
 					break;
 				case SDLK_s:
-					cameraPos += -cameraSpeed * cameraFront;
+					cameraPos += -cameraSpeed * cameraFront; //If S key is pressed, the camera pos is more than or equal to the speed * front
 					break;
 				case SDLK_a:
 					cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
@@ -246,7 +242,7 @@ int main(int argc, char ** argsv)
 				}
 			}
 		}
-
+		//Declaring the view to take in all the camera components
 		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
 		glEnable(GL_DEPTH_TEST);
@@ -259,30 +255,35 @@ int main(int argc, char ** argsv)
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureID);
 
+		//Setting programID
 		glUseProgram(simpleProgramID);
 
-		//Declare uniforms below
+		//Passing in uniforms below
 		glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, value_ptr(modelMatrix));
 		glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, value_ptr(view));
 		glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, value_ptr(projectionMatrix));
 		glUniform1i(textureLocation, 0);
 
-		//Sending light uniforms across
+		//Sending light material colour locations across
 		glUniform4fv(ambientMaterialColourLocation, 1, glm::value_ptr(ambientMaterialColour));
 		glUniform4fv(diffuseMaterialColourLocation, 1, glm::value_ptr(diffuseMaterialColour));
 		glUniform4fv(specularMaterialColourLocation, 1, glm::value_ptr(specularMaterialColour));
 
-
+		//Sending light colour locations across
 		glUniform4fv(ambientLightColourLocation, 1, glm::value_ptr(ambientLightColour));
 		glUniform4fv(diffuseLightColourLocation, 1, glm::value_ptr(diffuseLightColour));
-
 		glUniform4fv(specularLightColourLocation, 1, glm::value_ptr(specularLightColour));
+
+		////Sending specular material power location accross, along with the value of the specular material power
 		glUniform1f(specularMaterialPowerLocation, specularMaterialPower);
 
+		//Sending light direction location accross with its value
 		glUniform3fv(lightDirectionLocation, 1, glm::value_ptr(lightDirection));
 
+		//Render mesh
 		tankMesh->render();
 
+		//Setting window to be resizable
 		SDL_GL_SwapWindow(window);
 		SDL_SetWindowResizable(window, SDL_TRUE);
 	}
@@ -292,10 +293,14 @@ int main(int argc, char ** argsv)
 		delete tankMesh;
 		tankMesh = nullptr;
 	}
+
+	//Cleanup
 	glDeleteTextures(1, &textureID);
 	glDeleteProgram(simpleProgramID);
+
 	//Deleting the context
 	SDL_GL_DeleteContext(gl_Context);
+
 	//Clean up, deactivating the library and the window
 	SDL_DestroyWindow(window);
 	IMG_Quit();
